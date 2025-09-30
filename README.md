@@ -16,6 +16,7 @@ Voraussetzungen:
 C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\.
 
 
+
 This Zabbix template is designed to monitor Windows Updates using Zabbix Agent2 with dedicated PowerShell scripts. It provides comprehensive visibility into the update status of Windows systems and installed Chocolatey packages.
 
 Features:
@@ -30,3 +31,19 @@ Requirements:
 	•	Zabbix Agent2 with configured UserParameters.
 	•	PowerShell scripts placed in:
 C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\
+
+UserParameter for the Zabbix Agent2 
+
+UserParameter=CountUninstalledUpdates,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\CountUninstalledUpdates.ps1"
+UserParameter=DaysSinceLastUpdate,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\DaysSinceLastUpdate.ps1"
+UserParameter=ListUninstalledUpdates,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\ListUninstalledUpdates.ps1"
+UserParameter=CountUpdatesBySeverity[*],powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\CountUpdatesBySeverity.ps1" -Severity "$1"
+UserParameter=RebootRequired,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\CheckRebootRequired.ps1"
+UserParameter=pending.updates.json,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\ListPendingUpdatesJson.ps1"
+UserParameter=windows.update.lastsearch,powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\Get-LastUpdateSearchDate.ps1"
+#choco 
+
+UserParameter=choco.outdated.count,powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "(choco outdated | Select-String '|' | Measure-Object).Count"
+UserParameter=choco.outdated.list,powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "choco outdated | Select-String '|'"
+
+
