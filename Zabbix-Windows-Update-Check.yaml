@@ -1,0 +1,327 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 4c68248f0763456abf963e14ebc1f42a
+      name: 'Templates/OS Windows'
+  templates:
+    - uuid: 3d6f0a2e3c4a4f6cb2aa5b46a5f0c1f0
+      template: Template_Windows_Updates_PlaNet_Fox
+      name: 'Template Windows Updates (PlaNet_Fox_25)'
+      description: |
+        Created by Alexander Fox with PlaNet Fox 2025.
+        Monitors Windows Updates via Zabbix Agent2 UserParameters:
+        - CountUninstalledUpdates
+        - DaysSinceLastUpdate
+        Requires corresponding PowerShell scripts on the Windows host
+        (place them in C:\Program Files\Zabbix Agent 2\zabbix-agent-scripts\).
+      vendor:
+        name: 'Alexander Fox | PlaNet Fox'
+        version: 7.4-1
+      groups:
+        - name: 'Templates/OS Windows'
+      items:
+        - uuid: fe10b0deaf7c4753af2250cd976f4815
+          name: 'Chocolatey outdated packages (count)'
+          type: DEPENDENT
+          key: choco.outdated.count
+          history: 90d
+          description: 'Number of outdated Chocolatey packages'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.Count
+          master_item:
+            key: choco.outdated.list
+          triggers:
+            - uuid: 75b2fb4fee3a485caeb64a93b0efe3c3
+              expression: last(/Template_Windows_Updates_PlaNet_Fox/choco.outdated.count)>0
+              name: 'Chocolatey: Outdated packages detected'
+              priority: WARNING
+        - uuid: bc5cd413fa55454d92650fee0d74f724
+          name: 'Chocolatey outdated packages (list)'
+          type: ZABBIX_ACTIVE
+          key: choco.outdated.list
+          history: 7d
+          value_type: TEXT
+          description: 'List of outdated Chocolatey packages'
+          timeout: 30s
+        - uuid: 0c59d2d48e8a4f6f92c91f1d5d7c6a3e
+          name: 'Count Uninstalled Windows Updates'
+          type: ZABBIX_ACTIVE
+          key: CountUninstalledUpdates
+          delay: 1d
+          history: 90d
+          timeout: 30s
+        - uuid: 8abb59b5d6c54b42824e8ca83c44d93a
+          name: 'Updates by Severity (Critical)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Critical]'
+          history: 90d
+          timeout: 30s
+          triggers:
+            - uuid: 5880107027214dbaa22fef37ee35bf37
+              expression: 'last(/Template_Windows_Updates_PlaNet_Fox/CountUpdatesBySeverity[Critical])>0'
+              name: 'Windows: Critical updates pending'
+              priority: HIGH
+        - uuid: 6e7f06864b10445a82394b35bf637c35
+          name: 'Updates by Severity (Important)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Important]'
+          history: 90d
+          timeout: 30s
+        - uuid: bf61e21435c040888922dec14eb6d62c
+          name: 'Updates by Severity (Low)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Low]'
+          history: 90d
+          timeout: 30s
+        - uuid: df8bafda5ea4486c8e4f6307854e2707
+          name: 'Updates by Severity (Moderate)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Moderate]'
+          timeout: 60s
+        - uuid: 6cc3102f501e429e86bb7eb22640f327
+          name: 'Updates by Severity (Total)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Total]'
+          timeout: 30s
+        - uuid: e88ab0f81bd04e8498dad08f122d2cf2
+          name: 'Updates by Severity (Unknown)'
+          type: ZABBIX_ACTIVE
+          key: 'CountUpdatesBySeverity[Unknown]'
+          history: 90d
+          timeout: 30s
+        - uuid: 2b1d6e8f1d9c4c9b84faffcb17a90a2e
+          name: 'Days Since Last Windows Update'
+          type: ZABBIX_ACTIVE
+          key: DaysSinceLastUpdate
+          delay: 1d
+          history: 90d
+          units: D
+          timeout: 30s
+        - uuid: 414df629cdac4ca7a3977f08588d9cf4
+          name: 'Pending updates (JSON)'
+          type: ZABBIX_ACTIVE
+          key: pending.updates.json
+          history: 7d
+          value_type: TEXT
+          timeout: 60s
+        - uuid: b89ed0a10d3a4280ae67fbc121ce0994
+          name: 'Pending updates (count from JSON)'
+          type: DEPENDENT
+          key: pending.updates.json.count
+          history: 90d
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.Count
+          master_item:
+            key: pending.updates.json
+        - uuid: 32e320be1dec4864a73da99ff2c4cb75
+          name: 'Reboot required after updates'
+          type: ZABBIX_ACTIVE
+          key: RebootRequired
+          description: 'description: ''1 = reboot required, 0 = no reboot required'''
+          timeout: 30s
+          triggers:
+            - uuid: 4b9ef49fa7e444cc96efb2207f684f11
+              expression: last(/Template_Windows_Updates_PlaNet_Fox/RebootRequired)=1
+              name: 'Windows: Reboot required after updates'
+              priority: AVERAGE
+        - uuid: fc8aa198d0ae48b1ad8a7b1cb0db2b5b
+          name: 'Windows Update: Last successful search'
+          type: ZABBIX_ACTIVE
+          key: windows.update.lastsearch
+          history: 90d
+          trends: 7d
+          units: unixtime
+          description: 'nix timestamp of the last successful Windows Update search (via COM-API)'
+          triggers:
+            - uuid: 1479c019fa9744c6a29f46ac284d4f35
+              expression: 'now() - last(/Template_Windows_Updates_PlaNet_Fox/windows.update.lastsearch) > 7d'
+              name: 'Windows: No update search in the last 7 days'
+              priority: WARNING
+            - uuid: b6d1ddafb6834e648b36bbd673e75a50
+              expression: 'now() - last(/Template_Windows_Updates_PlaNet_Fox/windows.update.lastsearch) > 25d'
+              name: 'Windows: No update search in the last 25 days'
+              priority: HIGH
+              description: 'Fires if the last successful Windows Update search is older than 25 days.'
+              tags:
+                - tag: component
+                  value: updates
+                - tag: os
+                  value: windows
+      dashboards:
+        - uuid: 9973906eca6b441ebc99bb2c24231bb0
+          name: 'Windows Updates Overview'
+          pages:
+            - widgets:
+                - type: item
+                  name: 'Critical Updates'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 00BFFF
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '1'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: Template_Windows_Updates_PlaNet_Fox
+                        key: 'CountUpdatesBySeverity[Critical]'
+                    - type: STRING
+                      name: units
+                      value: '1'
+                    - type: STRING
+                      name: value_color
+                      value: B71C1C
+                - type: tophosts
+                  name: 'Windows Host Update Severity'
+                  'y': '3'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: column
+                      value: '1'
+                    - type: INTEGER
+                      name: columns.0.data
+                      value: '2'
+                    - type: STRING
+                      name: columns.0.item
+                      value: ''
+                    - type: STRING
+                      name: columns.0.name
+                      value: Hostname
+                    - type: STRING
+                      name: columns.0.text
+                      value: ''
+                    - type: INTEGER
+                      name: columns.1.data
+                      value: '1'
+                    - type: STRING
+                      name: columns.1.item
+                      value: 'Updates by Severity (Critical)'
+                    - type: STRING
+                      name: columns.1.name
+                      value: Critical
+                    - type: STRING
+                      name: columns.1.text
+                      value: ''
+                    - type: INTEGER
+                      name: columns.2.data
+                      value: '1'
+                    - type: STRING
+                      name: columns.2.item
+                      value: 'Updates by Severity (Important)'
+                    - type: STRING
+                      name: columns.2.name
+                      value: Important
+                    - type: STRING
+                      name: columns.2.text
+                      value: ''
+                    - type: INTEGER
+                      name: columns.3.data
+                      value: '1'
+                    - type: STRING
+                      name: columns.3.item
+                      value: 'Updates by Severity (Low)'
+                    - type: STRING
+                      name: columns.3.name
+                      value: Low
+                    - type: STRING
+                      name: columns.3.text
+                      value: ''
+                    - type: INTEGER
+                      name: columns.4.data
+                      value: '1'
+                    - type: STRING
+                      name: columns.4.item
+                      value: 'Windows Update: Last successful search'
+                    - type: STRING
+                      name: columns.4.name
+                      value: 'Last Search'
+                    - type: STRING
+                      name: columns.4.text
+                      value: ''
+                    - type: INTEGER
+                      name: columns.5.data
+                      value: '1'
+                    - type: STRING
+                      name: columns.5.item
+                      value: 'Updates by Severity (Total)'
+                    - type: STRING
+                      name: columns.5.name
+                      value: Total
+                    - type: STRING
+                      name: columns.5.text
+                      value: ''
+                    - type: STRING
+                      name: reference
+                      value: IWPHI
+                - type: item
+                  name: 'Important]'
+                  x: '12'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 00BFFF
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '1'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: Template_Windows_Updates_PlaNet_Fox
+                        key: 'CountUpdatesBySeverity[Important]'
+                    - type: STRING
+                      name: units
+                      value: '1'
+                    - type: STRING
+                      name: value_color
+                      value: B71C1C
+  graphs:
+    - uuid: de6794aa4a2a46ee8b05edb08ab83e1e
+      name: 'Windows Updates by Severity'
+      graph_items:
+        - color: FF0000
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Critical]'
+        - sortorder: '1'
+          color: FF8000
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Important]'
+        - sortorder: '2'
+          color: 26A69A
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Moderate]'
+        - sortorder: '3'
+          color: '274482'
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Low]'
+        - sortorder: '4'
+          color: 607D8B
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Unknown]'
+        - sortorder: '5'
+          color: 13191C
+          calc_fnc: ALL
+          item:
+            host: Template_Windows_Updates_PlaNet_Fox
+            key: 'CountUpdatesBySeverity[Total]'
